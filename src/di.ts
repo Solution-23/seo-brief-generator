@@ -1,9 +1,8 @@
 import { GenerateBriefUseCase } from './use-case.js';
 import { SearchRepository, PageParserRepository, AIRepository, BriefRepository } from './repository.js';
 
-// API-ключ — пока берём из процесса, позже вынесем в config
+// API-ключ — берём из переменной окружения
 const POLZA_API_KEY = process.env.POLZA_API_KEY;
-
 if (!POLZA_API_KEY) {
   throw new Error('❌ Не задан POLZA_API_KEY. Создай файл .env с ключом.');
 }

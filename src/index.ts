@@ -1,53 +1,19 @@
-import OpenAI from 'openai';
+import { di } from './di.js';
 
-// API Ключ 
-const POLZA_API_KEY = ''
-const client = new OpenAI ({
+async function main() {
+  try {
+    const keyword = process.argv[2];
+    if (!keyword) {
+      throw new Error('Укажите ключевое слово в аргументах: node index.js "seo"');
+    }
 
-	baseURL:'https://api.polza.ai/v1',
-	apiKey: POLZA_API_KEY, 
-})
-
-
-
-
-async function analyzerUrl(url: string) {
-	console.log(`Скачиваю страницу: ${url}`)
-// 1. Downloading HTML (Качаем HTML страницы)
-const response = await fetch(url);
-if (!response.ok) {
-	throw new Error(`Не удалось загрузить страницу: ${response.statusText}`)
+    console.log(`🔍 Начинаю генерацию SEO-брифа для ключевого слова: ${keyword}`);
+    const brief = await di.useCase.execute(keyword);
+    console.log('✅ SEO-бриф успешно сгенерирован:', brief);
+  } catch (error) {
+    console.error('❌ Ошибка при генерации брифа:', error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
 }
-const html = await response.text();
-const truncatedHtml = html.slice(0, 15000);
 
-// 2. AI-powered analysis (Отправка нейросети запрос на анализ)
-console.log(`Анализирую с помощью ИИ...`);
-
-const completion = await client.chat.completions.create({
-	// пока что модель будет gpt-4o-mini
-	model: 'gpt-4o-mini',
-	messages: [
-		{
-			role: 'system',
-			content: 'Ты — SEO-эксперт. Твоя задача проанализировать HTML-код страницы и вернуть строго JSON без лишнего текста. Поля: title (заголовок страницы), metaDescription, h1, wordCount (примерное количество слов основного текста), topKeywords (массив из 5 ключевых слов), headings (массив всех заголовков h2), hasCanonical (true/false). Если каких-то данных нет, оставь пустую строку или false.'
-		},
-		{
-			role: 'user',
-			content: `Проанализируй следующий HTML и верни JSON:\n\n${truncatedHtml}`
-		}	
-	], 
-	temperature: 0.1 // Response accuracy multiplier
-});
-
-// Receive the response and turn it into an object ( Получаем ответ и превращаем его в объект )
-const text = completion.choices[0]?.message?.content || '';
-
-try {
-	const seoData = JSON.parse(text);
-	return seoData;
-} catch (e) {
-	console.error('Не удалось распарсить овтет нейросети', text);
-	throw new Error('Нейросеть вернула невалидный JSON');
-	}
-}
+main();
