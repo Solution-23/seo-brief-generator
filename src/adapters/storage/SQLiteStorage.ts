@@ -1,23 +1,45 @@
-import Database from 'better-sqlite3';
+import initSqlJs, { Database, SqlJsStatic } from 'sql.js';
 import { Storage } from '../../core/ports/Storage';
 import { SEOBriefExport } from '../../core/entities/SEOBrief';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 export class SQLiteStorage implements Storage {
-  private db: Database.Database;
+  private db: Database;
+  private static sqlJs: SqlJsStatic;
+
+  private static async initializeSqlJs(): Promise<void> {
+    if (!SQLiteStorage.sqlJs) {
+      SQLiteStorage.sqlJs = await initSqlJs({
+        locateFile: file => `https://sql.js.org/dist/${file}`
+      });
+    }
+  }
 
   constructor() {
+    this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
+    await SQLiteStorage.initializeSqlJs();
+
     const dbPath = join(process.cwd(), 'data', 'briefs.db');
     if (!existsSync(join(process.cwd(), 'data'))) {
       mkdirSync(join(process.cwd(), 'data'), { recursive: true });
     }
-    this.db = new Database(dbPath);
-    this.initDB();
+
+    if (existsSync(dbPath)) {
+      const fileBuffer = readFileSync(dbPath);
+      this.db = new SQLiteStorage.sqlJs.Database(fileBuffer);
+    } else {
+      this.db = new SQLiteStorage.sqlJs.Database();
+      this.initDB();
+      this.saveDbToFile(dbPath);
+    }
   }
 
   private initDB(): void {
-    this.db.exec(`
+    this.db.run(`
       CREATE TABLE IF NOT EXISTS briefs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         keyword TEXT NOT NULL,
@@ -28,29 +50,48 @@ export class SQLiteStorage implements Storage {
     `);
   }
 
+  private saveDbToFile(path: string): void {
+    const data = this.db.export();
+    const buffer = SQLiteStorage.sqlJs.FS.readFile(path);
+    writeFileSync(path, Buffer.from(data));
+  }
+
   async save(brief: SEOBriefExport): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT INTO briefs (keyword, json, markdown, createdAt)
       VALUES (?, ?, ?, ?)
     `);
-    stmt.run(
+    stmt.bind([
       brief.json.targetKeyword,
       JSON.stringify(brief.json),
       brief.markdown,
       new Date().toISOString()
-    );
+    ]);
+    stmt.step();
+    stmt.free();
+
+    const dbPath = join(process.cwd(), 'data', 'briefs.db');
+    this.saveDbToFile(dbPath);
   }
 
   async getHistory(keyword: string): Promise<SEOBriefExport[]> {
-    const rows = this.db.prepare(`
+    const stmt = this.db.prepare(`
       SELECT json, markdown FROM briefs
       WHERE keyword = ?
       ORDER BY createdAt DESC
-    `).all(keyword) as Array<{ json: string; markdown: string }>;
+    `);
+    stmt.bind([keyword]);
 
-    return rows.map(row => ({
-      json: JSON.parse(row.json) as SEOBriefExport['json'],
-      markdown: row.markdown
-    }));
+    const results: SEOBriefExport[] = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      results.push({
+        json: JSON.parse(row.json as string) as SEOBriefExport['json'],
+        markdown: row.markdown as string
+      });
+    }
+    stmt.free();
+
+    return results;
   }
 }
