@@ -1,6 +1,9 @@
 import { DIContainer } from './di/container';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 async function main() {
   try {
