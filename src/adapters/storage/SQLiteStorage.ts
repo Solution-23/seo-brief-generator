@@ -7,6 +7,7 @@ import { join } from 'path';
 export class SQLiteStorage implements Storage {
   private db: Database;
   private static sqlJs: SqlJsStatic;
+  private dbPath: string;
 
   private static async initializeSqlJs(): Promise<void> {
     if (!SQLiteStorage.sqlJs) {
@@ -17,24 +18,24 @@ export class SQLiteStorage implements Storage {
   }
 
   constructor() {
+    this.dbPath = join(process.cwd(), 'data', 'briefs.db');
     this.initialize();
   }
 
   private async initialize(): Promise<void> {
     await SQLiteStorage.initializeSqlJs();
 
-    const dbPath = join(process.cwd(), 'data', 'briefs.db');
     if (!existsSync(join(process.cwd(), 'data'))) {
       mkdirSync(join(process.cwd(), 'data'), { recursive: true });
     }
 
-    if (existsSync(dbPath)) {
-      const fileBuffer = readFileSync(dbPath);
+    if (existsSync(this.dbPath)) {
+      const fileBuffer = readFileSync(this.dbPath);
       this.db = new SQLiteStorage.sqlJs.Database(fileBuffer);
     } else {
       this.db = new SQLiteStorage.sqlJs.Database();
       this.initDB();
-      this.saveDbToFile(dbPath);
+      this.saveDbToFile();
     }
   }
 
@@ -50,10 +51,9 @@ export class SQLiteStorage implements Storage {
     `);
   }
 
-  private saveDbToFile(path: string): void {
+  private saveDbToFile(): void {
     const data = this.db.export();
-    const buffer = SQLiteStorage.sqlJs.FS.readFile(path);
-    writeFileSync(path, Buffer.from(data));
+    writeFileSync(this.dbPath, Buffer.from(data));
   }
 
   async save(brief: SEOBriefExport): Promise<void> {
@@ -70,8 +70,7 @@ export class SQLiteStorage implements Storage {
     stmt.step();
     stmt.free();
 
-    const dbPath = join(process.cwd(), 'data', 'briefs.db');
-    this.saveDbToFile(dbPath);
+    this.saveDbToFile();
   }
 
   async getHistory(keyword: string): Promise<SEOBriefExport[]> {
