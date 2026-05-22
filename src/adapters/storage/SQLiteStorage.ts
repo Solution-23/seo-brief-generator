@@ -11,7 +11,7 @@ export class SQLiteStorage implements Storage {
   private static async initializeSqlJs(): Promise<void> {
     if (!SQLiteStorage.sqlJs) {
       SQLiteStorage.sqlJs = await initSqlJs({
-        locateFile: file => `https://sql.js.org/dist/${file}`
+        locateFile: file => join(__dirname, '..', '..', '..', 'node_modules', 'sql.js', 'dist', file)
       });
     }
   }
