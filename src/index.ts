@@ -1,17 +1,32 @@
-import { di } from './di.js';
+import { DIContainer } from './di/container';
+import { existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
 
 async function main() {
   try {
-    const keyword = process.argv[2];
-    if (!keyword) {
-      throw new Error('Укажите ключевое слово в аргументах: node index.js "seo"');
+    // Создаём папку для данных
+    const dataDir = join(process.cwd(), 'data');
+    if (!existsSync(dataDir)) {
+      mkdirSync(dataDir, { recursive: true });
     }
 
-    console.log(`🔍 Начинаю генерацию SEO-брифа для ключевого слова: ${keyword}`);
-    const brief = await di.useCase.execute(keyword);
-    console.log('✅ SEO-бриф успешно сгенерирован:', brief);
+    const keyword = process.argv[2];
+    if (!keyword) {
+      throw new Error('Укажите ключевое слово: node index.js "seo"');
+    }
+
+    const container = DIContainer.getInstance();
+    const useCase = container.getUseCase();
+
+    console.log(`🔍 Генерация SEO-брифа для ключевого слова: ${keyword}`);
+    const brief = await useCase.execute(keyword);
+
+    console.log('✅ Бриф сгенерирован!');
+    console.log('📄 Markdown-версия:');
+    console.log(brief.markdown);
+    console.log('\n💾 Сохранено в SQLite и JSON.');
   } catch (error) {
-    console.error('❌ Ошибка при генерации брифа:', error instanceof Error ? error.message : error);
+    console.error('❌ Ошибка:', error instanceof Error ? error.message : error);
     process.exit(1);
   }
 }
