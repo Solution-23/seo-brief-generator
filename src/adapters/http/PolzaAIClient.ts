@@ -7,7 +7,7 @@ export class PolzaAIClient implements AIService {
 
   constructor(apiKey: string) {
     this.client = new OpenAI({
-      baseURL: 'https://polza.ai/v1',
+      baseURL: 'https://api.polza.ai/v1',
       apiKey: apiKey,
     });
   }
