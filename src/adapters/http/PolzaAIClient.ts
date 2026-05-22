@@ -49,18 +49,13 @@ export class PolzaAIClient implements AIService {
     });
 
     const jsonText = completion.choices[0]?.message?.content || '';
-    try {
-      const brief = JSON.parse(jsonText) as SEOBrief;
-      brief.generatedAt = new Date().toISOString();
+    const brief = JSON.parse(jsonText) as SEOBrief;
+    brief.generatedAt = new Date().toISOString();
 
-      // Сохраняем бриф в файл
-      await this.saveBriefToMarkdown(brief);
+    // Сохраняем бриф в файл
+    await this.saveBriefToMarkdown(brief);
 
-      return brief;
-    } catch (e) {
-      console.error('Ошибка парсинга ответа AI:', jsonText);
-      throw new Error('AI вернул невалидный JSON');
-    }
+    return brief;
   }
 
   private async saveBriefToMarkdown(brief: SEOBrief): Promise<void> {
