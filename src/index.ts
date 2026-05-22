@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 
 // API Ключ 
-const POLZA_API_KEY = 'pza_XYRvzLSf6rftco-ge8stL2YviwXtd6n8'
+const POLZA_API_KEY = ''
 const client = new OpenAI ({
 
 	baseURL:'https://api.polza.ai/v1',
@@ -44,7 +44,7 @@ const completion = await client.chat.completions.create({
 const text = completion.choices[0]?.message?.content || '';
 
 try {
-	const seoData = JSON.parse(jsonText);
+	const seoData = JSON.parse(text);
 	return seoData;
 } catch (e) {
 	console.error('Не удалось распарсить овтет нейросети', text);
