@@ -73,8 +73,8 @@ export class PolzaAIClient implements AIService {
     return `# SEO Бриф для "${brief.targetKeyword}"\n\n` +
       `## Дата генерации\n${new Date(brief.generatedAt).toLocaleString('ru-RU')}\n\n` +
       `## Рекомендуемый объём\n${brief.recommendedVolume} слов\n\n` +
-      `## Структура страницы\n\n### H1\n${brief.structure.h1}\n\n### H2\n${brief.structure.h2.map(h2 => `- ${h2}`).join('\n')}\n\n### H3\n${brief.structure.h3.map(h3 => `  - ${h3}`).join('\n')}\n\n## Темы для статьи\n${brief.topics.map(topic => `- ${topic}`).join('\n')}\n\n## Ключевые слова\n${brief.keywords.map(keyword => `- ${keyword}`).join('\n')}\n\n## Анализ конкурентов\n${brief.competitorsAnalysis.map((page, i) =>
-      `### Конкурент #${i + 1}\n- URL: ${page.url}\n- Длина текста: ${page.wordCount} слов\n- Заголовки: ${page.headings.join(', ')}`
+      `## Структура страницы\n\n### H1\n${brief.structure.h1}\n\n### H2\n${brief.structure.h2?.map(h2 => `- ${h2}`)?.join('\n') || ''}\n\n### H3\n${brief.structure.h3?.map(h3 => `  - ${h3}`)?.join('\n') || ''}\n\n## Темы для статьи\n${(brief.topics || []).map(topic => `- ${topic}`).join('\n')}\n\n## Ключевые слова\n${(brief.keywords || []).map(keyword => `- ${keyword}`).join('\n')}\n\n## Анализ конкурентов\n${(brief.competitorsAnalysis || []).map((page, i) =>
+      `### Конкурент #${i + 1}\n- URL: ${page.url}\n- Длина текста: ${page.wordCount} слов\n- Заголовки: ${(page.headings || []).join(', ')}`
     ).join('\n\n')}`;
   }
 }
